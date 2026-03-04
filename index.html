@@ -2,552 +2,10 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,
+      maximum-scale=1.0, user-scalable=no">
 <title>HALO·九</title>
-<style>
-  /* ===== 全局重置与基础 ===== */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg:        #1a1f2e;
-    --fog:       #f5f0e8;        /* 雾白黄米色 */
-    --accent:    #7a9abf;        /* 淡蓝灰高亮 */
-    --accent2:   #a8c0d6;
-    --text-main: #e8e4da;
-    --text-sub:  #b0b8c8;
-    --glass-bg:  rgba(255,251,240,0.08);
-    --glass-border: rgba(122,154,191,0.22);
-    --glass-blur: blur(12px);
-    --radius-lg: 20px;
-    --radius-md: 14px;
-    --radius-sm: 10px;
-    --cell: calc(min(100vw, 430px) / 5);  /* 单元格边长 */
-  }
-
-  html, body {
-    height: 100%; width: 100%;
-    background: var(--bg);
-    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    overflow: hidden;
-    color: var(--text-main);
-  }
-
-  /* ===== 手机壳容器 ===== */
-  #phone {
-    position: relative;
-    width: min(100vw, 430px);
-    height: 100dvh;
-    margin: 0 auto;
-    overflow: hidden;
-    background:
-      radial-gradient(ellipse at 30% 15%, rgba(122,154,191,0.13) 0%, transparent 55%),
-      radial-gradient(ellipse at 75% 80%, rgba(168,192,214,0.09) 0%, transparent 50%),
-      #1a1f2e;
-  }
-
-  /* ===== 页面滑动容器 ===== */
-  #pages-wrapper {
-    display: flex;
-    width: 200%;
-    height: 100%;
-    transition: transform 0.42s cubic-bezier(0.4,0,0.2,1);
-    will-change: transform;
-  }
-
-  .page {
-    width: 50%;
-    height: 100%;
-    flex-shrink: 0;
-    padding: 8px 6px 6px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(8, 1fr);
-    gap: 6px;
-    align-content: start;
-  }
-
-  /* ===== 毛玻璃通用 ===== */
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-  }
-
-  /* ===== 分页指示器 ===== */
-  #page-dots {
-    position: absolute;
-    bottom: 10px;
-    left: 50%; transform: translateX(-50%);
-    display: flex; gap: 6px;
-    z-index: 100;
-  }
-  .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: rgba(122,154,191,0.35);
-    transition: background 0.3s, width 0.3s;
-  }
-  .dot.active {
-    width: 18px; border-radius: 3px;
-    background: var(--accent);
-  }
-
-  /* ================================================
-     组件 1：日期 + 倒计时胶囊（2×1）
-  ================================================ */
-  #widget-date {
-    grid-column: 1 / 3;
-    grid-row: 1 / 2;
-    display: flex;
-    border-radius: 50px;
-    overflow: hidden;
-    padding: 0;
-    cursor: default;
-  }
-
-  .date-left, .date-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 5px 8px;
-  }
-
-  .date-left {
-    border-right: 1px solid var(--glass-border);
-  }
-
-  .date-year-month {
-    font-size: 9px;
-    color: var(--accent);
-    letter-spacing: 0.5px;
-  }
-  .date-day {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--fog);
-    line-height: 1.1;
-  }
-  .date-lunar {
-    font-size: 8px;
-    color: var(--text-sub);
-    margin-top: 1px;
-  }
-
-  /* 右半 */
-  .date-right { cursor: pointer; }
-  .countdown-title {
-    font-size: 8px;
-    color: var(--text-sub);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .countdown-num {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent2);
-    line-height: 1.1;
-  }
-  .countdown-unit {
-    font-size: 8px;
-    color: var(--text-sub);
-  }
-
-  /* 编辑弹层 */
-  #modal-countdown {
-    display: none;
-    position: absolute;
-    inset: 0;
-    z-index: 200;
-    background: rgba(20,24,36,0.72);
-    backdrop-filter: blur(6px);
-    align-items: center;
-    justify-content: center;
-  }
-  #modal-countdown.open { display: flex; }
-
-  .modal-box {
-    width: 88%;
-    max-height: 80dvh;
-    overflow-y: auto;
-    background: rgba(30,36,52,0.97);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    padding: 18px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .modal-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--fog);
-    text-align: center;
-    letter-spacing: 1px;
-  }
-  .cd-list { display: flex; flex-direction: column; gap: 8px; }
-  .cd-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(122,154,191,0.08);
-    border-radius: var(--radius-sm);
-    padding: 7px 10px;
-    border: 1px solid var(--glass-border);
-  }
-  .cd-item-info { flex:1; }
-  .cd-item-name { font-size: 11px; color: var(--fog); }
-  .cd-item-date { font-size: 9px; color: var(--text-sub); }
-  .btn-del {
-    background: none; border: none;
-    color: #c87070; font-size: 14px; cursor: pointer;
-    padding: 2px 5px;
-  }
-
-  /* 添加表单 */
-  .cd-form { display: flex; flex-direction: column; gap: 8px; }
-  .cd-form input, .cd-form select {
-    background: rgba(255,251,240,0.06);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--fog);
-    font-size: 12px;
-    padding: 7px 10px;
-    outline: none;
-    width: 100%;
-  }
-  .cd-form input::placeholder { color: var(--text-sub); }
-  .cd-form select option { background: #1a1f2e; color: var(--fog); }
-
-  .btn-primary {
-    background: rgba(122,154,191,0.25);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    color: var(--accent2);
-    font-size: 12px;
-    padding: 8px;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    text-align: center;
-  }
-  .btn-close {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--text-sub);
-    font-size: 12px;
-    padding: 7px;
-    cursor: pointer;
-    text-align: center;
-  }
-
-  /* ================================================
-     组件 2：图片轮播（3×4）
-  ================================================ */
-  #widget-gallery {
-    grid-column: 3 / 6;
-    grid-row: 1 / 5;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    position: relative;
-    cursor: pointer;
-    padding: 0;
-    border: 1px solid var(--glass-border);
-  }
-
-  .gallery-inner {
-    width: 100%; height: 100%;
-    position: relative;
-    background: rgba(30,36,52,0.5);
-  }
-  .gallery-img {
-    position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity 0.8s ease;
-  }
-  .gallery-img.active { opacity: 1; }
-
-  .gallery-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: 6px;
-    color: var(--text-sub);
-    font-size: 11px;
-    user-select: none;
-  }
-  .gallery-empty-icon {
-    font-size: 28px;
-    opacity: 0.4;
-    line-height: 1;
-  }
-
-  /* 轮播进度点 */
-  .gallery-dots {
-    position: absolute;
-    bottom: 8px;
-    left: 50%; transform: translateX(-50%);
-    display: flex; gap: 4px; z-index: 2;
-  }
-  .gallery-dot {
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: rgba(255,251,240,0.35);
-    transition: background 0.3s, width 0.3s;
-  }
-  .gallery-dot.active {
-    width: 12px; border-radius: 2px;
-    background: rgba(255,251,240,0.85);
-  }
-
-  /* 图片输入弹层 */
-  #modal-gallery {
-    display: none;
-    position: absolute;
-    inset: 0; z-index: 200;
-    background: rgba(20,24,36,0.72);
-    backdrop-filter: blur(6px);
-    align-items: center;
-    justify-content: center;
-  }
-  #modal-gallery.open { display: flex; }
-
-  #gallery-url-input {
-    width: 100%;
-    min-height: 100px;
-    background: rgba(255,251,240,0.06);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--fog);
-    font-size: 11px;
-    padding: 8px 10px;
-    outline: none;
-    resize: vertical;
-    line-height: 1.7;
-  }
-  #gallery-url-input::placeholder { color: var(--text-sub); }
-
-  /* ================================================
-     组件 3：App 区域 A（2×3，6 格）
-  ================================================ */
-  #widget-apps-a {
-    grid-column: 1 / 3;
-    grid-row: 2 / 5;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(3, 1fr);
-    gap: 5px;
-    padding: 4px;
-    background: transparent;
-    border: none;
-    backdrop-filter: none;
-  }
-
-  .app-icon {
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    cursor: pointer;
-    transition: transform 0.15s, background 0.15s;
-    user-select: none;
-    padding: 4px 2px 5px;
-  }
-  .app-icon:active { transform: scale(0.92); background: rgba(122,154,191,0.15); }
-
-  .app-icon img {
-    width: 52%;
-    aspect-ratio: 1;
-    border-radius: 9px;
-    object-fit: cover;
-    pointer-events: none;
-  }
-  .app-icon .app-label {
-    font-size: 8px;
-    color: var(--text-sub);
-    letter-spacing: 0.3px;
-    max-width: 90%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: center;
-  }
-  .app-icon.empty {
-    opacity: 0.25;
-    cursor: default;
-  }
-  .app-icon.empty:active { transform: none; }
-
-  /* ================================================
-     组件 4：消息观赏（3×4）
-  ================================================ */
-  #widget-chat {
-    grid-column: 1 / 4;
-    grid-row: 5 / 9;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    position: relative;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .chat-header {
-    padding: 7px 12px 5px;
-    font-size: 10px;
-    color: var(--text-sub);
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--glass-border);
-    background: rgba(255,251,240,0.04);
-    flex-shrink: 0;
-  }
-
-  .chat-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    scrollbar-width: none;
-  }
-  .chat-scroll::-webkit-scrollbar { display: none; }
-
-  .chat-msg-group {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-  }
-
-  .chat-avatar {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: 1px solid var(--glass-border);
-    cursor: pointer;
-    background: rgba(122,154,191,0.2);
-  }
-
-  .chat-bubbles {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-width: 75%;
-  }
-
-  .chat-bubble {
-    background: rgba(255,251,240,0.10);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(122,154,191,0.18);
-    border-radius: 4px 14px 14px 14px;
-    padding: 6px 10px;
-    font-size: 11px;
-    color: var(--fog);
-    line-height: 1.5;
-    word-break: break-all;
-  }
-
-  /* 头像编辑弹层 */
-  #modal-chat {
-    display: none;
-    position: absolute;
-    inset: 0; z-index: 200;
-    background: rgba(20,24,36,0.72);
-    backdrop-filter: blur(6px);
-    align-items: center;
-    justify-content: center;
-  }
-  #modal-chat.open { display: flex; }
-
-  .chat-edit-avatar-preview {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--accent);
-    display: block;
-    margin: 0 auto 8px;
-    background: rgba(122,154,191,0.2);
-  }
-  .chat-avatar-btns {
-    display: flex; gap: 8px;
-  }
-  .chat-avatar-btns label, .chat-avatar-btns .btn-primary {
-    flex: 1; font-size: 11px;
-  }
-  label.btn-primary { text-align: center; cursor: pointer; display: block; }
-  #chat-local-file { display: none; }
-
-  #chat-msg-input {
-    width: 100%;
-    min-height: 70px;
-    background: rgba(255,251,240,0.06);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--fog);
-    font-size: 11px;
-    padding: 8px 10px;
-    outline: none;
-    resize: vertical;
-    line-height: 1.7;
-  }
-  #chat-msg-input::placeholder { color: var(--text-sub); }
-
-  /* ================================================
-     组件 5：App 区域 B（2×4，8 格）
-  ================================================ */
-  #widget-apps-b {
-    grid-column: 4 / 6;
-    grid-row: 5 / 9;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(4, 1fr);
-    gap: 5px;
-    padding: 4px;
-    background: transparent;
-    border: none;
-    backdrop-filter: none;
-  }
-
-  /* ================================================
-     第二页（空白网格）
-  ================================================ */
-  #page2 {
-    position: relative;
-  }
-  .page2-hint {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    color: rgba(122,154,191,0.25);
-    font-size: 12px;
-    letter-spacing: 1px;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  /* ================================================
-     触摸滑动
-  ================================================ */
-  /* handled in JS */
-
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="phone">
@@ -558,22 +16,22 @@
     <!-- ========== 第一页 ========== -->
     <div class="page" id="page1">
 
-      <!-- 组件1：日期+倒计时胶囊 -->
+      <!-- 组件1：日期+倒计时胶囊 (2×1) -->
       <div id="widget-date" class="glass">
         <div class="date-left">
           <div class="date-year-month" id="disp-year-month"></div>
-          <div class="date-day"   id="disp-day"></div>
-          <div class="date-lunar" id="disp-lunar"></div>
+          <div class="date-day"        id="disp-day"></div>
+          <div class="date-lunar"      id="disp-lunar"></div>
         </div>
-        <div class="date-right" id="cd-right" onclick="openModal('modal-countdown')">
-          <div class="countdown-title" id="cd-title">加载中…</div>
+        <div class="date-right" id="cd-right">
+          <div class="countdown-title" id="cd-title">点击添加记录</div>
           <div class="countdown-num"   id="cd-num">—</div>
-          <div class="countdown-unit"  id="cd-unit">天</div>
+          <div class="countdown-unit"  id="cd-unit"></div>
         </div>
       </div>
 
-      <!-- 组件2：图片轮播 -->
-      <div id="widget-gallery" class="glass" onclick="openModal('modal-gallery')">
+      <!-- 组件2：图片轮播 (3×4) -->
+      <div id="widget-gallery" class="glass">
         <div class="gallery-inner" id="gallery-inner">
           <div class="gallery-empty" id="gallery-empty">
             <div class="gallery-empty-icon">🖼</div>
@@ -583,46 +41,55 @@
         </div>
       </div>
 
-      <!-- 组件3：App区域A -->
+      <!-- 组件3：App 区域 A (2×3, 6格) -->
       <div id="widget-apps-a">
-        <!-- 聊天App -->
-        <div class="app-icon" onclick="alert('聊天 App')">
-          <img src="https://cdn-icons-png.flaticon.com/512/2491/2491324.png" alt="聊天">
-          <span class="app-label">聊天</span>
+        <div class="app-icon" id="app-slot-chat">
+          <img id="appicon-chat"
+               src="https://cdn-icons-png.flaticon.com/512/2491/2491324.png"
+               alt="聊天">
+          <span class="app-label" id="applabel-chat">聊天</span>
         </div>
-        <!-- 设置App -->
-        <div class="app-icon" onclick="alert('设置 App')">
-          <img src="https://cdn-icons-png.flaticon.com/512/3524/3524659.png" alt="设置">
-          <span class="app-label">设置</span>
+        <div class="app-icon" id="btn-open-settings">
+          <img id="appicon-settings"
+               src="https://cdn-icons-png.flaticon.com/512/3524/3524659.png"
+               alt="设置">
+          <span class="app-label" id="applabel-settings">设置</span>
         </div>
-        <!-- 空位 × 4 -->
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-a2">
+          <span class="app-label">—</span>
+        </div>
+        <div class="app-icon empty" id="app-slot-a3">
+          <span class="app-label">—</span>
+        </div>
+        <div class="app-icon empty" id="app-slot-a4">
+          <span class="app-label">—</span>
+        </div>
+        <div class="app-icon empty" id="app-slot-a5">
+          <span class="app-label">—</span>
+        </div>
       </div>
 
-      <!-- 组件4：消息观赏 -->
+      <!-- 组件4：消息观赏 (3×4) -->
       <div id="widget-chat" class="glass">
         <div class="chat-header">Messages</div>
         <div class="chat-scroll" id="chat-scroll"></div>
       </div>
 
-      <!-- 组件5：App区域B -->
+      <!-- 组件5：App 区域 B (2×4, 8格) -->
       <div id="widget-apps-b">
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
-        <div class="app-icon empty"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b0"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b1"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b2"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b3"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b4"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b5"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b6"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-b7"><span class="app-label">—</span></div>
       </div>
 
     </div><!-- /page1 -->
 
-    <!-- ========== 第二页 ========== -->
+    <!-- ========== 第二页（空白待扩展） ========== -->
     <div class="page" id="page2">
       <div class="page2-hint">← 向右滑动返回 · 此页待更新</div>
     </div>
@@ -635,501 +102,207 @@
     <div class="dot"        data-idx="1"></div>
   </div>
 
-  <!-- ===== 弹层：倒计时编辑 ===== -->
-  <div id="modal-countdown">
+  <!-- ================================================================
+       弹层：倒计时编辑
+  ================================================================ -->
+  <div id="modal-countdown" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">纪念日 / 倒计时</div>
       <div class="cd-list" id="cd-list"></div>
-      <hr style="border-color:var(--glass-border);border-top:none;">
+      <hr class="modal-divider">
       <div class="cd-form">
-        <input id="cd-input-title" type="text" placeholder="标题（如：在一起第X天）" maxlength="20">
-        <input id="cd-input-date"  type="date">
+        <input id="cd-input-title" type="text"
+               placeholder="标题（如：在一起第X天）" maxlength="20">
+        <input id="cd-input-date" type="date">
         <select id="cd-input-type">
           <option value="anniversary">纪念日（已过天数）</option>
           <option value="countdown">倒计时（剩余天数）</option>
         </select>
-        <div class="btn-primary" onclick="addCdItem()">＋ 添加</div>
+        <div class="btn-primary" id="btn-cd-add">＋ 添加</div>
       </div>
-      <div class="btn-close" onclick="closeModal('modal-countdown')">完成</div>
+      <div class="btn-close" id="btn-cd-close">完成</div>
     </div>
   </div>
 
-  <!-- ===== 弹层：图片轮播编辑 ===== -->
-  <div id="modal-gallery">
+  <!-- ================================================================
+       弹层：图片轮播编辑
+  ================================================================ -->
+  <div id="modal-gallery" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">图片轮播</div>
-      <p style="font-size:10px;color:var(--text-sub);text-align:center;">每行一个图片URL，循环播放（每张10秒）</p>
-      <textarea id="gallery-url-input" placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg"></textarea>
-      <div class="btn-primary" onclick="applyGallery()">确认</div>
-      <div class="btn-close"   onclick="closeModal('modal-gallery')">取消</div>
+      <p class="modal-hint">每行一个图片 URL，循环播放（每张 10 秒）</p>
+      <textarea id="gallery-url-input"
+        placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg">
+      </textarea>
+      <div class="btn-primary" id="btn-gallery-apply">确认</div>
+      <div class="btn-close"   id="btn-gallery-close">取消</div>
     </div>
   </div>
 
-  <!-- ===== 弹层：消息头像编辑 ===== -->
-  <div id="modal-chat">
+  <!-- ================================================================
+       弹层：消息头像 & 内容编辑
+  ================================================================ -->
+  <div id="modal-chat" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">编辑消息展示</div>
-      <img id="chat-edit-avatar-preview" class="chat-edit-avatar-preview" src="" alt="头像预览">
+      <img id="chat-edit-avatar-preview" class="chat-edit-avatar-preview"
+           src="" alt="头像预览">
       <div class="chat-avatar-btns">
         <label class="btn-primary" for="chat-local-file">本地图片</label>
-        <input id="chat-local-file" type="file" accept="image/*" onchange="handleLocalAvatar(event)">
-        <div class="btn-primary" onclick="applyAvatarUrl()">粘贴URL</div>
+        <input id="chat-local-file" type="file" accept="image/*">
+        <div class="btn-primary" id="btn-apply-avatar-url">粘贴 URL</div>
       </div>
-      <input id="chat-url-input" type="text" placeholder="头像图片URL（可选）"
-        style="background:rgba(255,251,240,0.06);border:1px solid var(--glass-border);border-radius:var(--radius-sm);color:var(--fog);font-size:11px;padding:7px 10px;outline:none;width:100%;">
-      <p style="font-size:10px;color:var(--text-sub);">消息内容（每行一条）：</p>
-      <textarea id="chat-msg-input" placeholder="第一条消息&#10;第二条消息&#10;第三条消息"></textarea>
-      <div class="btn-primary" onclick="applyChatEdit()">确认</div>
-      <div class="btn-close"   onclick="closeModal('modal-chat')">取消</div>
+      <input id="chat-url-input" type="text" class="modal-text-input"
+             placeholder="头像图片 URL（可选）">
+      <p class="modal-hint">消息内容（每行一条）：</p>
+      <textarea id="chat-msg-input"
+        placeholder="第一条消息&#10;第二条消息&#10;第三条消息"></textarea>
+      <div class="btn-primary" id="btn-chat-apply">确认</div>
+      <div class="btn-close"   id="btn-chat-close">取消</div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       弹层：设置页
+  ================================================================ -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-box settings-modal-box">
+
+      <div class="modal-title">设置</div>
+
+      <!-- 标签导航 -->
+      <div class="settings-tabs">
+        <div class="stab active" data-tab="tab-api">API</div>
+        <div class="stab"        data-tab="tab-theme">美化</div>
+        <div class="stab"        data-tab="tab-data">数据</div>
+      </div>
+
+      <!-- ① API 设置 -->
+      <div class="settings-tab-content active" id="tab-api">
+        <div class="settings-section-title">当前配置</div>
+
+        <input id="api-url-input" type="url" class="modal-text-input"
+               placeholder="API 地址，如 https://api.openai.com/v1">
+        <input id="api-key-input" type="password" class="modal-text-input"
+               placeholder="API 密钥（Key）">
+
+        <div class="api-row">
+          <div class="btn-primary" id="btn-fetch-models"
+               style="white-space:nowrap">拉取模型</div>
+          <select id="api-model-select" class="api-model-select">
+            <option value="">— 请先拉取模型 —</option>
+          </select>
+        </div>
+
+        <div id="api-fetch-status" class="api-fetch-status"></div>
+        <div class="btn-primary" id="btn-save-api">保存当前配置</div>
+
+        <hr class="modal-divider">
+
+        <div class="settings-section-title">配置存档</div>
+        <div class="api-row">
+          <input id="api-archive-name" type="text"
+                 class="modal-text-input" placeholder="存档名称"
+                 style="flex:1">
+          <div class="btn-primary" id="btn-save-archive"
+               style="white-space:nowrap">存入存档</div>
+        </div>
+        <div class="cd-list" id="api-archive-list"></div>
+      </div>
+
+      <!-- ② 美化 / 主题 -->
+      <div class="settings-tab-content" id="tab-theme">
+
+        <!-- 壁纸 -->
+        <div class="settings-section-title">壁纸设置</div>
+        <div class="theme-row">
+          <label class="btn-primary" for="wallpaper-local-file"
+                 style="flex:1;text-align:center;cursor:pointer">本地上传</label>
+          <input id="wallpaper-local-file" type="file"
+                 accept="image/*" style="display:none">
+          <div class="btn-primary" id="btn-show-wallpaper-url"
+               style="flex:1">输入 URL</div>
+        </div>
+        <input id="wallpaper-url-input" type="url"
+               class="modal-text-input" placeholder="壁纸图片 URL"
+               style="display:none">
+        <div class="btn-primary" id="btn-wallpaper-apply"
+             style="display:none">应用壁纸</div>
+        <div class="btn-close" id="btn-wallpaper-clear">清除壁纸</div>
+
+        <hr class="modal-divider">
+
+        <!-- App 图标替换 -->
+        <div class="settings-section-title">App 图标替换</div>
+        <div id="icon-replace-list" class="icon-replace-list"></div>
+
+        <hr class="modal-divider">
+
+        <!-- 整体配色 -->
+        <div class="settings-section-title">整体配色</div>
+        <div class="color-grid">
+          <div class="color-row">
+            <span class="color-label">背景色</span>
+            <input type="color" class="color-picker"
+                   data-var="--bg" value="#1a1f2e">
+          </div>
+          <div class="color-row">
+            <span class="color-label">雾白米色</span>
+            <input type="color" class="color-picker"
+                   data-var="--fog" value="#f5f0e8">
+          </div>
+          <div class="color-row">
+            <span class="color-label">高亮蓝灰</span>
+            <input type="color" class="color-picker"
+                   data-var="--accent" value="#7a9abf">
+          </div>
+          <div class="color-row">
+            <span class="color-label">高亮浅蓝</span>
+            <input type="color" class="color-picker"
+                   data-var="--accent2" value="#a8c0d6">
+          </div>
+          <div class="color-row">
+            <span class="color-label">主文字色</span>
+            <input type="color" class="color-picker"
+                   data-var="--text-main" value="#e8e4da">
+          </div>
+          <div class="color-row">
+            <span class="color-label">次文字色</span>
+            <input type="color" class="color-picker"
+                   data-var="--text-sub" value="#b0b8c8">
+          </div>
+        </div>
+        <div class="theme-row" style="margin-top:6px">
+          <div class="btn-primary" id="btn-color-apply" style="flex:1">应用配色</div>
+          <div class="btn-close"   id="btn-color-reset"  style="flex:1">恢复默认</div>
+        </div>
+
+      </div>
+
+      <!-- ③ 数据管理 -->
+      <div class="settings-tab-content" id="tab-data">
+        <div class="settings-section-title">数据管理</div>
+        <p class="modal-hint">HALO·九 · 版本 1.0</p>
+        <div class="btn-primary" id="btn-export-data">导出数据（复制 JSON）</div>
+        <div class="btn-primary" id="btn-import-data">导入数据（粘贴 JSON）</div>
+        <textarea id="settings-import-input"
+          placeholder="将导出的 JSON 粘贴到此处…"
+          style="display:none;min-height:70px"></textarea>
+        <div class="btn-primary" id="btn-import-confirm"
+             style="display:none">确认导入</div>
+        <hr class="modal-divider">
+        <div class="btn-del-all" id="btn-clear-all">清空所有数据</div>
+      </div>
+
+      <div class="btn-close" id="btn-settings-close">关闭</div>
     </div>
   </div>
 
 </div><!-- /phone -->
 
-<script>
-/* ====================================================
-   工具函数
-==================================================== */
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-/* ====================================================
-   页面滑动（触摸 + 鼠标）
-==================================================== */
-(function() {
-  const wrapper = document.getElementById('pages-wrapper');
-  const dots    = document.querySelectorAll('.dot');
-  let currentPage = 0;
-  const totalPages = 2;
-  let startX = 0, startY = 0, dragging = false;
-
-  function goTo(idx) {
-    currentPage = Math.max(0, Math.min(totalPages - 1, idx));
-    wrapper.style.transform = `translateX(-${currentPage * 50}%)`;
-    dots.forEach((d, i) => d.classList.toggle('active', i === currentPage));
-  }
-
-  // 触摸
-  wrapper.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    dragging = true;
-  }, { passive: true });
-
-  wrapper.addEventListener('touchend', e => {
-    if (!dragging) return;
-    const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-      goTo(dx < 0 ? currentPage + 1 : currentPage - 1);
-    }
-    dragging = false;
-  }, { passive: true });
-
-  // 鼠标（桌面调试）
-  wrapper.addEventListener('mousedown', e => {
-    startX = e.clientX; dragging = true;
-  });
-  window.addEventListener('mouseup', e => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    if (Math.abs(dx) > 40) goTo(dx < 0 ? currentPage + 1 : currentPage - 1);
-    dragging = false;
-  });
-
-  dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.idx)));
-})();
-
-/* ====================================================
-   组件1：日期显示（阳历 + 阴历）
-==================================================== */
-// 简易阴历转换（寿星万年历算法精简版）
-// 节气 & 节日查表
-const SOLAR_TERMS = [
-  '小寒','大寒','立春','雨水','惊蛰','春分',
-  'cion清明','谷雨','立夏','小满','芒种','夏至',
-  '小暑','大暑','立秋','处暑','白露','秋分',
-  '寒露','霜降','立冬','小雪','大雪','冬至'
-];
-
-// 农历月份名
-const LUNAR_MONTHS = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];
-const LUNAR_DAYS   = [
-  '初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
-  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
-  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'
-];
-
-// 农历数据：1900-2100 精简查表（使用公开农历API思路 → 这里用内置简算）
-function getLunarDate(date) {
-  // 使用一个轻量级的阴历算法
-  // 基于1900年1月31日为农历正月初一
-  const lunarInfo = [
-    0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
-    0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
-    0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
-    0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
-    0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
-    0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,
-    0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
-    0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
-    0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
-    0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06aa0,0x0a6b6,0x056a0,0x02b40,0x0acb5,
-    0x09270,0x04970, // 覆盖到2001年左右
-  ];
-
-  const baseDate = new Date(1900, 0, 31);
-  const offset   = Math.floor((date - baseDate) / 86400000);
-  let   i, temp = 0, leap = 0, isLeap = false;
-
-  for (i = 1900; i < 2050 && temp <= offset; i++) {
-    leap = leapMonth(lunarInfo, i);
-    temp += daysInLunarYear(lunarInfo, i, leap);
-  }
-  if (temp > offset) { i--; temp -= daysInLunarYear(lunarInfo, i, leapMonth(lunarInfo, i)); }
-
-  let lunarYear = i;
-  temp = offset - temp;
-
-  leap = leapMonth(lunarInfo, lunarYear);
-  isLeap = false;
-  let lunarMonth, lunarDay;
-  for (i = 1; i <= 12; i++) {
-    let days = (leap === i) ? leapDays(lunarInfo, lunarYear) : monthDays(lunarInfo, lunarYear, i);
-    if (temp < days) { lunarMonth = i; lunarDay = temp + 1; break; }
-    temp -= days;
-    if (leap === i) {
-      days = monthDays(lunarInfo, lunarYear, i);
-      if (temp < days) { lunarMonth = i; lunarDay = temp + 1; isLeap = true; break; }
-      temp -= days;
-    }
-  }
-  return {
-    year: lunarYear,
-    month: lunarMonth,
-    day: lunarDay,
-    isLeap,
-    monthName: (isLeap ? '闰' : '') + LUNAR_MONTHS[lunarMonth - 1] + '月',
-    dayName: LUNAR_DAYS[lunarDay - 1]
-  };
-}
-
-function leapMonth(lunarInfo, y) { return lunarInfo[y - 1900] & 0xf; }
-function leapDays(lunarInfo, y) {
-  if (leapMonth(lunarInfo, y)) {
-    return (lunarInfo[y - 1900] & 0x10000) ? 30 : 29;
-  }
-  return 0;
-}
-function monthDays(lunarInfo, y, m) {
-  return (lunarInfo[y - 1900] & (0x10000 >> m)) ? 30 : 29;
-}
-function daysInLunarYear(lunarInfo, y, leap) {
-  let sum = 348;
-  for (let i = 0x8000; i > 0x8; i >>= 1) {
-    sum += (lunarInfo[y - 1900] & i) ? 1 : 0;
-  }
-  return sum + leapDays(lunarInfo, y);
-}
-
-// 节日 & 节气简表
-const SOLAR_FESTIVALS = {
-  '1-1':   '元旦',
-  '2-14':  '情人节',
-  '3-8':   '妇女节',
-  '4-1':   '愚人节',
-  '5-1':   '劳动节',
-  '5-4':   '青年节',
-  '6-1':   '儿童节',
-  '7-1':   '建党节',
-  '8-1':   '建军节',
-  '9-9':   '重阳节',
-  '9-10':  '教师节',
-  '10-1':  '国庆节',
-  '12-25': '圣诞节'
-};
-const LUNAR_FESTIVALS = {
-  '1-1':  '春节',
-  '1-15': '元宵节',
-  '5-5':  '端午节',
-  '7-7':  '七夕',
-  '7-15': '中元节',
-  '8-15': '中秋节',
-  '9-9':  '重阳节',
-  '12-30':'除夕'
-};
-
-// 节气（每月两个，用近似日期）
-const JIEQI_TABLE = {
-  '1-6':'小寒','1-20':'大寒',
-  '2-4':'立春','2-19':'雨水',
-  '3-6':'惊蛰','3-21':'春分',
-  '4-5':'清明','4-20':'谷雨',
-  '5-6':'立夏','5-21':'小满',
-  '6-6':'芒种','6-21':'夏至',
-  '7-7':'小暑','7-23':'大暑',
-  '8-7':'立秋','8-23':'处暑',
-  '9-8':'白露','9-23':'秋分',
-  '10-8':'寒露','10-23':'霜降',
-  '11-7':'立冬','11-22':'小雪',
-  '12-7':'大雪','12-22':'冬至'
-};
-
-function updateDate() {
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const day   = now.getDate();
-
-  // 阳历
-  document.getElementById('disp-year-month').textContent =
-    `${year} · ${String(month).padStart(2,'0')}`;
-  document.getElementById('disp-day').textContent = String(day).padStart(2,'0');
-
-  // 节日/节气
-  const solarKey  = `${month}-${day}`;
-  const jieqiKey  = `${month}-${day}`;
-  let lunarStr = '';
-  try {
-    const lunar = getLunarDate(now);
-    const lunarKey = `${lunar.month}-${lunar.day}`;
-    const festival = SOLAR_FESTIVALS[solarKey]
-      || LUNAR_FESTIVALS[lunarKey]
-      || JIEQI_TABLE[jieqiKey]
-      || '';
-    lunarStr = `${lunar.monthName}${lunar.dayName}` + (festival ? `  ${festival}` : '');
-  } catch(e) {
-    lunarStr = '农历加载中';
-  }
-  document.getElementById('disp-lunar').textContent = lunarStr;
-}
-updateDate();
-setInterval(updateDate, 60000);
-
-/* ====================================================
-   组件1：倒计时数据 & 轮播
-==================================================== */
-let cdItems = JSON.parse(localStorage.getItem('halo_cd') || '[]');
-let cdIndex = 0;
-
-function saveCd() { localStorage.setItem('halo_cd', JSON.stringify(cdItems)); }
-
-function calcCdDays(item) {
-  const today  = new Date(); today.setHours(0,0,0,0);
-  const target = new Date(item.date); target.setHours(0,0,0,0);
-  const diff   = Math.round((today - target) / 86400000);
-  if (item.type === 'anniversary') return { num: diff,  unit: '天' };
-  else                             return { num: -diff, unit: '天' };
-}
-
-function renderCdDisplay() {
-  if (!cdItems.length) {
-    document.getElementById('cd-title').textContent = '点击添加记录';
-    document.getElementById('cd-num').textContent   = '—';
-    document.getElementById('cd-unit').textContent  = '';
-    return;
-  }
-  const item = cdItems[cdIndex % cdItems.length];
-  const { num, unit } = calcCdDays(item);
-  document.getElementById('cd-title').textContent = item.title;
-  document.getElementById('cd-num').textContent   = Math.abs(num);
-  document.getElementById('cd-unit').textContent  = unit;
-}
-
-function renderCdList() {
-  const el = document.getElementById('cd-list');
-  el.innerHTML = '';
-  cdItems.forEach((item, idx) => {
-    const { num } = calcCdDays(item);
-    const div = document.createElement('div');
-    div.className = 'cd-item';
-    div.innerHTML = `
-      <div class="cd-item-info">
-        <div class="cd-item-name">${item.title}</div>
-        <div class="cd-item-date">${item.date}  ·  ${item.type === 'anniversary' ? '已过' : '还剩'} ${Math.abs(num)} 天</div>
-      </div>
-      <button class="btn-del" onclick="delCdItem(${idx})">✕</button>
-    `;
-    el.appendChild(div);
-  });
-}
-
-function addCdItem() {
-  const title = document.getElementById('cd-input-title').value.trim();
-  const date  = document.getElementById('cd-input-date').value;
-  const type  = document.getElementById('cd-input-type').value;
-  if (!title || !date) { alert('请填写标题和日期'); return; }
-  cdItems.push({ title, date, type });
-  saveCd(); renderCdList(); renderCdDisplay();
-  document.getElementById('cd-input-title').value = '';
-  document.getElementById('cd-input-date').value  = '';
-}
-
-function delCdItem(idx) {
-  cdItems.splice(idx, 1);
-  saveCd(); renderCdList(); renderCdDisplay();
-}
-
-// 轮播
-setInterval(() => {
-  if (cdItems.length > 1) { cdIndex = (cdIndex + 1) % cdItems.length; renderCdDisplay(); }
-}, 3000);
-
-// 打开弹层时渲染列表
-document.getElementById('cd-right').addEventListener('click', renderCdList);
-renderCdDisplay();
-
-/* ====================================================
-   组件2：图片轮播
-==================================================== */
-let galleryUrls  = JSON.parse(localStorage.getItem('halo_gallery') || '[]');
-let galleryIndex = 0;
-let galleryTimer = null;
-
-function renderGallery() {
-  const inner = document.getElementById('gallery-inner');
-  const empty = document.getElementById('gallery-empty');
-  const dotsEl = document.getElementById('gallery-dots');
-
-  // 清理旧图片
-  inner.querySelectorAll('.gallery-img').forEach(el => el.remove());
-  dotsEl.innerHTML = '';
-
-  if (!galleryUrls.length) {
-    empty.style.display = 'flex';
-    if (galleryTimer) clearInterval(galleryTimer);
-    return;
-  }
-  empty.style.display = 'none';
-
-  galleryUrls.forEach((url, i) => {
-    const img = document.createElement('img');
-    img.className = 'gallery-img' + (i === 0 ? ' active' : '');
-    img.src = url;
-    img.alt = '';
-    inner.insertBefore(img, dotsEl);
-
-    const dot = document.createElement('div');
-    dot.className = 'gallery-dot' + (i === 0 ? ' active' : '');
-    dotsEl.appendChild(dot);
-  });
-
-  galleryIndex = 0;
-  if (galleryTimer) clearInterval(galleryTimer);
-  if (galleryUrls.length > 1) {
-    galleryTimer = setInterval(nextGallery, 10000);
-  }
-}
-
-function nextGallery() {
-  const imgs = document.querySelectorAll('.gallery-img');
-  const dots = document.querySelectorAll('.gallery-dot');
-  if (!imgs.length) return;
-  imgs[galleryIndex].classList.remove('active');
-  dots[galleryIndex].classList.remove('active');
-  galleryIndex = (galleryIndex + 1) % imgs.length;
-  imgs[galleryIndex].classList.add('active');
-  dots[galleryIndex].classList.add('active');
-}
-
-function applyGallery() {
-  const raw = document.getElementById('gallery-url-input').value;
-  galleryUrls = raw.split('\n').map(s => s.trim()).filter(Boolean);
-  localStorage.setItem('halo_gallery', JSON.stringify(galleryUrls));
-  renderGallery();
-  closeModal('modal-gallery');
-}
-
-// 打开时回填
-document.getElementById('widget-gallery').addEventListener('click', () => {
-  document.getElementById('gallery-url-input').value = galleryUrls.join('\n');
-});
-
-renderGallery();
-
-/* ====================================================
-   组件4：消息观赏
-==================================================== */
-let chatData = JSON.parse(localStorage.getItem('halo_chat') || JSON.stringify({
-  avatar: 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
-  messages: ['你今天吃饭了吗？', '记得照顾好自己哦 ☁️', '晚安～']
-}));
-
-function renderChat() {
-  const scroll = document.getElementById('chat-scroll');
-  scroll.innerHTML = '';
-  const group = document.createElement('div');
-  group.className = 'chat-msg-group';
-
-  const avatar = document.createElement('img');
-  avatar.className = 'chat-avatar';
-  avatar.src = chatData.avatar;
-  avatar.alt = '头像';
-  avatar.addEventListener('click', openChatEdit);
-  group.appendChild(avatar);
-
-  const bubbles = document.createElement('div');
-  bubbles.className = 'chat-bubbles';
-  chatData.messages.forEach(msg => {
-    if (!msg.trim()) return;
-    const b = document.createElement('div');
-    b.className = 'chat-bubble';
-    b.textContent = msg;
-    bubbles.appendChild(b);
-  });
-  group.appendChild(bubbles);
-  scroll.appendChild(group);
-}
-
-function openChatEdit() {
-  document.getElementById('chat-edit-avatar-preview').src = chatData.avatar;
-  document.getElementById('chat-url-input').value = chatData.avatar;
-  document.getElementById('chat-msg-input').value = chatData.messages.join('\n');
-  openModal('modal-chat');
-}
-
-function applyAvatarUrl() {
-  const url = document.getElementById('chat-url-input').value.trim();
-  if (url) {
-    chatData.avatar = url;
-    document.getElementById('chat-edit-avatar-preview').src = url;
-  }
-}
-
-function handleLocalAvatar(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    chatData.avatar = ev.target.result;
-    document.getElementById('chat-edit-avatar-preview').src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function applyChatEdit() {
-  const urlVal = document.getElementById('chat-url-input').value.trim();
-  if (urlVal) chatData.avatar = urlVal;
-  const msgs = document.getElementById('chat-msg-input').value
-    .split('\n').filter(s => s.trim());
-  chatData.messages = msgs;
-  localStorage.setItem('halo_chat', JSON.stringify(chatData));
-  renderChat();
-  closeModal('modal-chat');
-}
-
-renderChat();
-
-/* ====================================================
-   阻止弹层内点击冒泡到轮播
-==================================================== */
-document.querySelectorAll('.modal-box').forEach(box => {
-  box.addEventListener('click', e => e.stopPropagation());
-});
-</script>
+<script src="calendar.js"></script>
+<script src="gallery.js"></script>
+<script src="settings.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
