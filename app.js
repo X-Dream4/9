@@ -74,4 +74,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initCalendar();   // calendar.js
   initGallery();    // gallery.js
   initSettings();   // settings.js（含 chat / API / 美化 / 数据）
+  initLandiao();    // landiao.js（蓝调 App）
 });

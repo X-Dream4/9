@@ -6,17 +6,17 @@
       maximum-scale=1.0, user-scalable=no">
 <title>HALO·九</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="landiao.css">
 </head>
 <body>
 <div id="phone">
 
-  <!-- 页面滑动包裹层 -->
   <div id="pages-wrapper">
 
     <!-- ========== 第一页 ========== -->
     <div class="page" id="page1">
 
-      <!-- 组件1：日期+倒计时胶囊 (2×1) -->
+      <!-- 组件1：日期+倒计时胶囊 -->
       <div id="widget-date" class="glass">
         <div class="date-left">
           <div class="date-year-month" id="disp-year-month"></div>
@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <!-- 组件2：图片轮播 (3×4) -->
+      <!-- 组件2：图片轮播 -->
       <div id="widget-gallery" class="glass">
         <div class="gallery-inner" id="gallery-inner">
           <div class="gallery-empty" id="gallery-empty">
@@ -41,41 +41,35 @@
         </div>
       </div>
 
-      <!-- 组件3：App 区域 A (2×3, 6格) -->
+      <!-- 组件3：App 区域 A -->
       <div id="widget-apps-a">
-        <div class="app-icon" id="app-slot-chat">
+        <!-- 蓝调 App（原聊天App） -->
+        <div class="app-icon" id="app-slot-chat" id="btn-open-landiao">
           <img id="appicon-chat"
                src="https://cdn-icons-png.flaticon.com/512/2491/2491324.png"
-               alt="聊天">
-          <span class="app-label" id="applabel-chat">聊天</span>
+               alt="蓝调">
+          <span class="app-label" id="applabel-chat">蓝调</span>
         </div>
+        <!-- 设置 App -->
         <div class="app-icon" id="btn-open-settings">
           <img id="appicon-settings"
                src="https://cdn-icons-png.flaticon.com/512/3524/3524659.png"
                alt="设置">
           <span class="app-label" id="applabel-settings">设置</span>
         </div>
-        <div class="app-icon empty" id="app-slot-a2">
-          <span class="app-label">—</span>
-        </div>
-        <div class="app-icon empty" id="app-slot-a3">
-          <span class="app-label">—</span>
-        </div>
-        <div class="app-icon empty" id="app-slot-a4">
-          <span class="app-label">—</span>
-        </div>
-        <div class="app-icon empty" id="app-slot-a5">
-          <span class="app-label">—</span>
-        </div>
+        <div class="app-icon empty" id="app-slot-a2"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-a3"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-a4"><span class="app-label">—</span></div>
+        <div class="app-icon empty" id="app-slot-a5"><span class="app-label">—</span></div>
       </div>
 
-      <!-- 组件4：消息观赏 (3×4) -->
+      <!-- 组件4：消息观赏 -->
       <div id="widget-chat" class="glass">
         <div class="chat-header">Messages</div>
         <div class="chat-scroll" id="chat-scroll"></div>
       </div>
 
-      <!-- 组件5：App 区域 B (2×4, 8格) -->
+      <!-- 组件5：App 区域 B -->
       <div id="widget-apps-b">
         <div class="app-icon empty" id="app-slot-b0"><span class="app-label">—</span></div>
         <div class="app-icon empty" id="app-slot-b1"><span class="app-label">—</span></div>
@@ -89,22 +83,19 @@
 
     </div><!-- /page1 -->
 
-    <!-- ========== 第二页（空白待扩展） ========== -->
+    <!-- ========== 第二页 ========== -->
     <div class="page" id="page2">
       <div class="page2-hint">← 向右滑动返回 · 此页待更新</div>
     </div>
 
   </div><!-- /pages-wrapper -->
 
-  <!-- 分页指示器 -->
   <div id="page-dots">
     <div class="dot active" data-idx="0"></div>
     <div class="dot"        data-idx="1"></div>
   </div>
 
-  <!-- ================================================================
-       弹层：倒计时编辑
-  ================================================================ -->
+  <!-- 弹层：倒计时 -->
   <div id="modal-countdown" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">纪念日 / 倒计时</div>
@@ -124,9 +115,7 @@
     </div>
   </div>
 
-  <!-- ================================================================
-       弹层：图片轮播编辑
-  ================================================================ -->
+  <!-- 弹层：图片轮播 -->
   <div id="modal-gallery" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">图片轮播</div>
@@ -139,9 +128,7 @@
     </div>
   </div>
 
-  <!-- ================================================================
-       弹层：消息头像 & 内容编辑
-  ================================================================ -->
+  <!-- 弹层：消息编辑 -->
   <div id="modal-chat" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-title">编辑消息展示</div>
@@ -162,124 +149,92 @@
     </div>
   </div>
 
-  <!-- ================================================================
-       弹层：设置页
-  ================================================================ -->
+  <!-- 弹层：设置页 -->
   <div id="modal-settings" class="modal-overlay">
     <div class="modal-box settings-modal-box">
-
       <div class="modal-title">设置</div>
-
-      <!-- 标签导航 -->
       <div class="settings-tabs">
         <div class="stab active" data-tab="tab-api">API</div>
         <div class="stab"        data-tab="tab-theme">美化</div>
         <div class="stab"        data-tab="tab-data">数据</div>
       </div>
 
-      <!-- ① API 设置 -->
+      <!-- API -->
       <div class="settings-tab-content active" id="tab-api">
         <div class="settings-section-title">当前配置</div>
-
         <input id="api-url-input" type="url" class="modal-text-input"
                placeholder="API 地址，如 https://api.openai.com/v1">
         <input id="api-key-input" type="password" class="modal-text-input"
                placeholder="API 密钥（Key）">
-
         <div class="api-row">
-          <div class="btn-primary" id="btn-fetch-models"
-               style="white-space:nowrap">拉取模型</div>
+          <div class="btn-primary" id="btn-fetch-models" style="white-space:nowrap">拉取模型</div>
           <select id="api-model-select" class="api-model-select">
             <option value="">— 请先拉取模型 —</option>
           </select>
         </div>
-
         <div id="api-fetch-status" class="api-fetch-status"></div>
         <div class="btn-primary" id="btn-save-api">保存当前配置</div>
-
         <hr class="modal-divider">
-
         <div class="settings-section-title">配置存档</div>
         <div class="api-row">
           <input id="api-archive-name" type="text"
-                 class="modal-text-input" placeholder="存档名称"
-                 style="flex:1">
-          <div class="btn-primary" id="btn-save-archive"
-               style="white-space:nowrap">存入存档</div>
+                 class="modal-text-input" placeholder="存档名称" style="flex:1">
+          <div class="btn-primary" id="btn-save-archive" style="white-space:nowrap">存入存档</div>
         </div>
         <div class="cd-list" id="api-archive-list"></div>
       </div>
 
-      <!-- ② 美化 / 主题 -->
+      <!-- 美化 -->
       <div class="settings-tab-content" id="tab-theme">
-
-        <!-- 壁纸 -->
         <div class="settings-section-title">壁纸设置</div>
         <div class="theme-row">
           <label class="btn-primary" for="wallpaper-local-file"
                  style="flex:1;text-align:center;cursor:pointer">本地上传</label>
-          <input id="wallpaper-local-file" type="file"
-                 accept="image/*" style="display:none">
-          <div class="btn-primary" id="btn-show-wallpaper-url"
-               style="flex:1">输入 URL</div>
+          <input id="wallpaper-local-file" type="file" accept="image/*" style="display:none">
+          <div class="btn-primary" id="btn-show-wallpaper-url" style="flex:1">输入 URL</div>
         </div>
-        <input id="wallpaper-url-input" type="url"
-               class="modal-text-input" placeholder="壁纸图片 URL"
-               style="display:none">
-        <div class="btn-primary" id="btn-wallpaper-apply"
-             style="display:none">应用壁纸</div>
+        <input id="wallpaper-url-input" type="url" class="modal-text-input"
+               placeholder="壁纸图片 URL" style="display:none">
+        <div class="btn-primary" id="btn-wallpaper-apply" style="display:none">应用壁纸</div>
         <div class="btn-close" id="btn-wallpaper-clear">清除壁纸</div>
-
         <hr class="modal-divider">
-
-        <!-- App 图标替换 -->
         <div class="settings-section-title">App 图标替换</div>
         <div id="icon-replace-list" class="icon-replace-list"></div>
-
         <hr class="modal-divider">
-
-        <!-- 整体配色 -->
         <div class="settings-section-title">整体配色</div>
         <div class="color-grid">
           <div class="color-row">
             <span class="color-label">背景色</span>
-            <input type="color" class="color-picker"
-                   data-var="--bg" value="#1a1f2e">
+            <input type="color" class="color-picker" data-var="--bg" value="#1a1f2e">
           </div>
           <div class="color-row">
             <span class="color-label">雾白米色</span>
-            <input type="color" class="color-picker"
-                   data-var="--fog" value="#f5f0e8">
+            <input type="color" class="color-picker" data-var="--fog" value="#f5f0e8">
           </div>
           <div class="color-row">
             <span class="color-label">高亮蓝灰</span>
-            <input type="color" class="color-picker"
-                   data-var="--accent" value="#7a9abf">
+            <input type="color" class="color-picker" data-var="--accent" value="#7a9abf">
           </div>
           <div class="color-row">
             <span class="color-label">高亮浅蓝</span>
-            <input type="color" class="color-picker"
-                   data-var="--accent2" value="#a8c0d6">
+            <input type="color" class="color-picker" data-var="--accent2" value="#a8c0d6">
           </div>
           <div class="color-row">
             <span class="color-label">主文字色</span>
-            <input type="color" class="color-picker"
-                   data-var="--text-main" value="#e8e4da">
+            <input type="color" class="color-picker" data-var="--text-main" value="#e8e4da">
           </div>
           <div class="color-row">
             <span class="color-label">次文字色</span>
-            <input type="color" class="color-picker"
-                   data-var="--text-sub" value="#b0b8c8">
+            <input type="color" class="color-picker" data-var="--text-sub" value="#b0b8c8">
           </div>
         </div>
         <div class="theme-row" style="margin-top:6px">
           <div class="btn-primary" id="btn-color-apply" style="flex:1">应用配色</div>
           <div class="btn-close"   id="btn-color-reset"  style="flex:1">恢复默认</div>
         </div>
-
       </div>
 
-      <!-- ③ 数据管理 -->
+      <!-- 数据 -->
       <div class="settings-tab-content" id="tab-data">
         <div class="settings-section-title">数据管理</div>
         <p class="modal-hint">HALO·九 · 版本 1.0</p>
@@ -288,8 +243,7 @@
         <textarea id="settings-import-input"
           placeholder="将导出的 JSON 粘贴到此处…"
           style="display:none;min-height:70px"></textarea>
-        <div class="btn-primary" id="btn-import-confirm"
-             style="display:none">确认导入</div>
+        <div class="btn-primary" id="btn-import-confirm" style="display:none">确认导入</div>
         <hr class="modal-divider">
         <div class="btn-del-all" id="btn-clear-all">清空所有数据</div>
       </div>
@@ -298,11 +252,241 @@
     </div>
   </div>
 
+  <!-- ================================================================
+       蓝调 App — 全屏容器（四个界面在此内部切换）
+  ================================================================ -->
+  <div id="landiao-app" class="ld-hidden">
+
+    <!-- 全局顶部导航 -->
+    <div id="ld-nav">
+      <div class="ld-nav-item active" data-view="ld-view-roles">
+        <span class="ld-nav-icon">✦</span>
+        <span class="ld-nav-label">角色</span>
+      </div>
+      <div class="ld-nav-item" data-view="ld-view-chats">
+        <span class="ld-nav-icon">✉</span>
+        <span class="ld-nav-label">信件</span>
+      </div>
+      <div class="ld-nav-item" data-view="ld-view-square">
+        <span class="ld-nav-icon">❧</span>
+        <span class="ld-nav-label">广场</span>
+      </div>
+      <div class="ld-nav-item" data-view="ld-view-me">
+        <span class="ld-nav-icon">◎</span>
+        <span class="ld-nav-label">我的</span>
+      </div>
+    </div>
+
+    <!-- ① 角色库 -->
+    <div id="ld-view-roles" class="ld-view active">
+      <div class="ld-roles-bg">
+        <div class="ld-view-title">角色库</div>
+        <div id="ld-roles-grid" class="ld-roles-grid"></div>
+        <!-- 新建角色便利贴 -->
+        <div id="btn-new-role" class="ld-sticky-new">
+          <span class="ld-sticky-plus">＋</span>
+          <span class="ld-sticky-text">新建角色</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 聊天列表 -->
+    <div id="ld-view-chats" class="ld-view">
+      <div class="ld-chats-bg">
+        <div class="ld-view-title">信件往来</div>
+        <div id="ld-chat-list" class="ld-chat-list"></div>
+      </div>
+    </div>
+
+    <!-- ③ 聊天对话（本子模式，从聊天列表跳入） -->
+    <div id="ld-view-convo" class="ld-view ld-view-notebook">
+      <div class="ld-notebook-bg">
+        <!-- 顶部双头像 -->
+        <div class="ld-notebook-header">
+          <div class="ld-notebook-avatar-wrap left" id="ld-convo-role-wrap">
+            <div class="ld-tape ld-tape-left"></div>
+            <img id="ld-convo-role-avatar" class="ld-old-photo-avatar" src="" alt="">
+            <div class="ld-photo-corner"></div>
+          </div>
+          <div class="ld-convo-title" id="ld-convo-title-center"></div>
+          <div class="ld-notebook-avatar-wrap right" id="ld-convo-user-wrap">
+            <div class="ld-tape ld-tape-right"></div>
+            <img id="ld-convo-user-avatar" class="ld-old-photo-avatar" src="" alt="">
+            <div class="ld-photo-corner"></div>
+          </div>
+        </div>
+        <!-- 消息滚动区（本子横线） -->
+        <div class="ld-notebook-messages" id="ld-notebook-messages"></div>
+        <!-- 底部输入行 -->
+        <div class="ld-notebook-input-row">
+          <div class="ld-notebook-send-avatar" id="ld-convo-send-avatar-btn">
+            <img id="ld-convo-role-avatar-small" src="" alt="">
+          </div>
+          <input id="ld-notebook-input" class="ld-notebook-input"
+                 type="text" placeholder="写在本子上…">
+          <div class="ld-notebook-send-btn" id="ld-notebook-send">发</div>
+        </div>
+        <!-- 返回按钮 -->
+        <div class="ld-convo-back" id="ld-convo-back">← 返回</div>
+      </div>
+    </div>
+
+    <!-- ④ 动态广场 -->
+    <div id="ld-view-square" class="ld-view">
+      <div class="ld-square-bg">
+        <div class="ld-view-title ld-square-title">软木广场</div>
+        <div id="ld-square-board" class="ld-square-board"></div>
+        <div id="btn-new-post" class="ld-square-new-btn">
+          <span class="ld-pin">📌</span>
+          <span>发动态</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑤ 我的 -->
+    <div id="ld-view-me" class="ld-view">
+      <div class="ld-me-bg">
+        <div class="ld-me-card" id="ld-me-card">
+          <div class="ld-me-card-tape"></div>
+          <div class="ld-me-avatar-wrap">
+            <img id="ld-me-avatar" class="ld-me-avatar" src="" alt="我">
+            <label class="ld-me-avatar-edit" for="ld-me-avatar-file">更换</label>
+            <input id="ld-me-avatar-file" type="file" accept="image/*" style="display:none">
+          </div>
+          <div class="ld-me-name" id="ld-me-name-display">旅行者</div>
+          <div class="ld-me-sig"  id="ld-me-sig-display">写下你的签名…</div>
+          <div class="ld-me-edit-btn" id="btn-edit-me-card">编辑档案</div>
+        </div>
+        <!-- 卷页效果设置入口 -->
+        <div class="ld-me-curl" id="btn-ld-me-settings">
+          <span class="ld-me-curl-text">设置</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /landiao-app -->
+
+  <!-- ================================================================
+       蓝调 弹层组
+  ================================================================ -->
+
+  <!-- 新建/编辑角色 -->
+  <div id="ld-modal-role" class="ld-modal-overlay">
+    <div class="ld-modal-box">
+      <div class="ld-modal-title">角色档案</div>
+      <img id="ld-role-avatar-preview" class="ld-modal-avatar-preview" src="" alt="">
+      <div class="ld-modal-row">
+        <label class="ld-modal-btn" for="ld-role-avatar-file">上传头像</label>
+        <input id="ld-role-avatar-file" type="file" accept="image/*" style="display:none">
+        <div class="ld-modal-btn" id="btn-ld-role-avatar-url">URL</div>
+      </div>
+      <input id="ld-role-avatar-url-input" class="ld-modal-input"
+             type="url" placeholder="头像图片 URL" style="display:none">
+      <input id="ld-role-name-input" class="ld-modal-input"
+             type="text" placeholder="角色名" maxlength="12">
+      <textarea id="ld-role-intro-input" class="ld-modal-textarea"
+                placeholder="一句简介…" maxlength="40"></textarea>
+      <input id="ld-role-system-input" class="ld-modal-input"
+             type="text" placeholder="System Prompt（角色设定，可选）">
+      <div class="ld-modal-row">
+        <div class="ld-modal-btn confirm" id="btn-ld-role-save">保存</div>
+        <div class="ld-modal-btn"         id="btn-ld-role-cancel">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 字体/颜色设置 -->
+  <div id="ld-modal-style" class="ld-modal-overlay">
+    <div class="ld-modal-box">
+      <div class="ld-modal-title">手写风格</div>
+      <div class="ld-style-row">
+        <span class="ld-style-label">角色字色</span>
+        <input type="color" id="ld-color-role" value="#2c3e50">
+      </div>
+      <div class="ld-style-row">
+        <span class="ld-style-label">用户字色</span>
+        <input type="color" id="ld-color-user" value="#7a3f2d">
+      </div>
+      <div class="ld-style-row">
+        <span class="ld-style-label">字体风格</span>
+        <select id="ld-font-select" class="ld-modal-select">
+          <option value="'Noto Serif SC', serif">宋体衬线</option>
+          <option value="'ZCOOL QingKe HuangYou', cursive">手写体</option>
+          <option value="'Ma Shan Zheng', cursive">马善政楷体</option>
+          <option value="Georgia, serif">Georgia</option>
+        </select>
+      </div>
+      <div class="ld-modal-row">
+        <div class="ld-modal-btn confirm" id="btn-ld-style-save">应用</div>
+        <div class="ld-modal-btn"         id="btn-ld-style-cancel">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建动态 -->
+  <div id="ld-modal-post" class="ld-modal-overlay">
+    <div class="ld-modal-box">
+      <div class="ld-modal-title">📌 新建动态</div>
+      <textarea id="ld-post-input" class="ld-modal-textarea"
+                placeholder="写点什么…" maxlength="120"></textarea>
+      <div class="ld-modal-row">
+        <div class="ld-modal-btn confirm" id="btn-ld-post-save">发布</div>
+        <div class="ld-modal-btn"         id="btn-ld-post-cancel">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 评论弹层 -->
+  <div id="ld-modal-comment" class="ld-modal-overlay">
+    <div class="ld-modal-box">
+      <div class="ld-modal-title">评论</div>
+      <div id="ld-comment-list" class="ld-comment-list"></div>
+      <textarea id="ld-comment-input" class="ld-modal-textarea"
+                placeholder="写评论…" maxlength="80"></textarea>
+      <div class="ld-modal-row">
+        <div class="ld-modal-btn confirm" id="btn-ld-comment-save">发布评论</div>
+        <div class="ld-modal-btn"         id="btn-ld-comment-cancel">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑我的档案 -->
+  <div id="ld-modal-me" class="ld-modal-overlay">
+    <div class="ld-modal-box">
+      <div class="ld-modal-title">编辑档案</div>
+      <input id="ld-me-name-input" class="ld-modal-input"
+             type="text" placeholder="你的名字" maxlength="12">
+      <textarea id="ld-me-sig-input" class="ld-modal-textarea"
+                placeholder="签名 / 一句话" maxlength="40"></textarea>
+      <div class="ld-modal-row">
+        <div class="ld-modal-btn confirm" id="btn-ld-me-save">保存</div>
+        <div class="ld-modal-btn"         id="btn-ld-me-cancel">取消</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 蓝调内部设置 -->
+  <div id="ld-modal-settings" class="ld-modal-overlay">
+    <div class="ld-modal-box">
+      <div class="ld-modal-title">蓝调设置</div>
+      <p class="ld-modal-hint">API 配置从 HALO·九 主设置同步</p>
+      <div class="ld-style-row">
+        <span class="ld-style-label">当前模型</span>
+        <span id="ld-settings-model" style="font-size:11px;color:#a8c0d6"></span>
+      </div>
+      <div class="ld-modal-btn" id="btn-ld-clear-convo">清空当前对话记录</div>
+      <div class="ld-modal-row" style="margin-top:8px">
+        <div class="ld-modal-btn confirm" id="btn-ld-settings-close">关闭</div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /phone -->
 
 <script src="calendar.js"></script>
 <script src="gallery.js"></script>
 <script src="settings.js"></script>
+<script src="landiao.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
