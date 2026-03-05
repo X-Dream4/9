@@ -1,541 +1,545 @@
-/* =====================================================
-   settings.js — 消息组件 + API设置 + 美化/主题 + 数据管理
-===================================================== */
+/* ============================================================
+   settings.js — 设置 App 全部逻辑
+   ============================================================ */
 
-/* =====================================================
-   消息观赏（chat widget）
-===================================================== */
-let chatData = JSON.parse(
-  localStorage.getItem('halo_chat') ||
-  JSON.stringify({
-    avatar:   'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
-    messages: ['你今天吃饭了吗？', '记得照顾好自己哦 ☁️', '晚安～'],
-  })
-);
-
-function renderChat() {
-  const scroll = document.getElementById('chat-scroll');
-  scroll.innerHTML = '';
-  const group = document.createElement('div');
-  group.className = 'chat-msg-group';
-
-  const avatar = document.createElement('img');
-  avatar.className = 'chat-avatar';
-  avatar.src = chatData.avatar;
-  avatar.alt = '头像';
-  avatar.addEventListener('click', openChatEdit);
-  group.appendChild(avatar);
-
-  const bubbles = document.createElement('div');
-  bubbles.className = 'chat-bubbles';
-  chatData.messages.forEach(msg => {
-    if (!msg.trim()) return;
-    const b = document.createElement('div');
-    b.className = 'chat-bubble';
-    b.textContent = msg;
-    bubbles.appendChild(b);
-  });
-  group.appendChild(bubbles);
-  scroll.appendChild(group);
+/* ---------- 工具（复用主app的save/load） ---------- */
+function sSave(key, val) {
+  try { localStorage.setItem('halo9_' + key, JSON.stringify(val)); } catch (e) {}
 }
-
-function openChatEdit() {
-  document.getElementById('chat-edit-avatar-preview').src = chatData.avatar;
-  document.getElementById('chat-url-input').value         = chatData.avatar;
-  document.getElementById('chat-msg-input').value         = chatData.messages.join('\n');
-  openModal('modal-chat');
-}
-
-function applyAvatarUrl() {
-  const url = document.getElementById('chat-url-input').value.trim();
-  if (url) {
-    chatData.avatar = url;
-    document.getElementById('chat-edit-avatar-preview').src = url;
-  }
-}
-
-function handleLocalAvatar(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    chatData.avatar = ev.target.result;
-    document.getElementById('chat-edit-avatar-preview').src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function applyChatEdit() {
-  const urlVal = document.getElementById('chat-url-input').value.trim();
-  if (urlVal) chatData.avatar = urlVal;
-  chatData.messages = document.getElementById('chat-msg-input').value
-    .split('\n').filter(s => s.trim());
-  localStorage.setItem('halo_chat', JSON.stringify(chatData));
-  renderChat();
-  closeModal('modal-chat');
-}
-
-function initChat() {
-  renderChat();
-  document.getElementById('btn-apply-avatar-url').addEventListener('click', applyAvatarUrl);
-  document.getElementById('chat-local-file').addEventListener('change', handleLocalAvatar);
-  document.getElementById('btn-chat-apply').addEventListener('click', applyChatEdit);
-  document.getElementById('btn-chat-close').addEventListener('click', () => {
-    closeModal('modal-chat');
-  });
-}
-
-/* =====================================================
-   ① API 设置
-===================================================== */
-let apiConfig   = JSON.parse(localStorage.getItem('halo_api_config')   || '{"url":"","key":"","model":""}');
-let apiArchives = JSON.parse(localStorage.getItem('halo_api_archives') || '[]');
-
-function saveApiConfig()  { localStorage.setItem('halo_api_config',   JSON.stringify(apiConfig)); }
-function saveApiArchives(){ localStorage.setItem('halo_api_archives', JSON.stringify(apiArchives)); }
-
-function loadApiConfigToUI() {
-  document.getElementById('api-url-input').value = apiConfig.url || '';
-  document.getElementById('api-key-input').value = apiConfig.key || '';
-  const sel = document.getElementById('api-model-select');
-  if (apiConfig.model) {
-    sel.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = apiConfig.model;
-    opt.textContent = apiConfig.model;
-    opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
-
-async function fetchModels() {
-  const url    = document.getElementById('api-url-input').value.trim().replace(/\/$/, '');
-  const key    = document.getElementById('api-key-input').value.trim();
-  const status = document.getElementById('api-fetch-status');
-
-  if (!url || !key) {
-    status.textContent = '请先填写 API 地址和密钥';
-    status.className   = 'api-fetch-status err';
-    return;
-  }
-
-  status.textContent = '正在拉取…';
-  status.className   = 'api-fetch-status';
-
+function sLoad(key, def) {
   try {
-    const res = await fetch(`${url}/models`, {
-      headers: { 'Authorization': `Bearer ${key}` }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    const list = Array.isArray(data)
-      ? data
-      : (data.data || data.models || []);
-
-    if (!list.length) throw new Error('未返回任何模型');
-
-    const sel = document.getElementById('api-model-select');
-    sel.innerHTML = '';
-    list.forEach(m => {
-      const id  = typeof m === 'string' ? m : (m.id || m.name || String(m));
-      const opt = document.createElement('option');
-      opt.value = id; opt.textContent = id;
-      if (id === apiConfig.model) opt.selected = true;
-      sel.appendChild(opt);
-    });
-
-    status.textContent = `成功获取 ${list.length} 个模型`;
-    status.className   = 'api-fetch-status ok';
-  } catch(e) {
-    status.textContent = `拉取失败：${e.message}`;
-    status.className   = 'api-fetch-status err';
+    const v = localStorage.getItem('halo9_' + key);
+    return v !== null ? JSON.parse(v) : def;
+  } catch (e) {
+    return def;
   }
 }
 
-function saveCurrentApiConfig() {
-  apiConfig.url   = document.getElementById('api-url-input').value.trim().replace(/\/$/, '');
-  apiConfig.key   = document.getElementById('api-key-input').value.trim();
-  apiConfig.model = document.getElementById('api-model-select').value;
-  saveApiConfig();
-  const status = document.getElementById('api-fetch-status');
-  status.textContent = '配置已保存';
-  status.className   = 'api-fetch-status ok';
+/* ============================================================
+   层级导航
+   ============================================================ */
+function showLayer(id) {
+  document.querySelectorAll('.settings-layer').forEach(el => {
+    el.style.display = 'none';
+  });
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = 'flex';
+    // 重置动画
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = '';
+  }
 }
+function hideAllSettings() {
+  document.querySelectorAll('.settings-layer').forEach(el => {
+    el.style.display = 'none';
+  });
+}
+
+/* 设置App入口 — 找到所有设置App图标并绑定 */
+function bindSettingsEntry() {
+  // dock 设置按钮
+  const dockSettings = document.getElementById('dock-settings');
+  if (dockSettings) {
+    dockSettings.addEventListener('click', () => showLayer('settings-root'));
+  }
+  // 主屏两个App中的设置
+  document.querySelectorAll('[data-app="settings"]').forEach(el => {
+    el.addEventListener('click', () => showLayer('settings-root'));
+  });
+}
+bindSettingsEntry();
+
+/* 设置主列表关闭 */
+document.getElementById('settings-root-close')
+  .addEventListener('click', hideAllSettings);
+
+/* 通用返回按钮（data-back 指向目标层） */
+document.querySelectorAll('.settings-back-btn[data-back]').forEach(btn => {
+  btn.addEventListener('click', function () {
+    showLayer(this.dataset.back);
+  });
+});
+
+/* 三个条目导航 */
+document.getElementById('goto-api')
+  .addEventListener('click', () => {
+    renderApiArchiveList();
+    showLayer('settings-api');
+  });
+document.getElementById('goto-theme')
+  .addEventListener('click', () => {
+    renderIconReplaceList();
+    renderColorFields();
+    showLayer('settings-theme');
+  });
+document.getElementById('goto-data')
+  .addEventListener('click', () => showLayer('settings-data'));
+
+/* ============================================================
+   ① API 设置
+   ============================================================ */
+let apiArchives = sLoad('apiArchives', []);
+let currentApiModel = '';
 
 function renderApiArchiveList() {
-  const el = document.getElementById('api-archive-list');
-  el.innerHTML = '';
+  const container = document.getElementById('api-archive-list');
   if (!apiArchives.length) {
-    el.innerHTML = '<div style="font-size:10px;color:var(--text-sub);text-align:center">暂无存档</div>';
+    container.innerHTML =
+      '<div class="settings-desc" style="padding:4px 0;">暂无存档，保存后显示在这里</div>';
     return;
   }
+  container.innerHTML = '';
   apiArchives.forEach((arc, idx) => {
-    const div = document.createElement('div');
-    div.className = 'cd-item';
-    div.innerHTML = `
-      <div class="cd-item-info" style="cursor:pointer">
-        <div class="cd-item-name">${arc.name}</div>
-        <div class="cd-item-date">${arc.url} · ${arc.model || '未选模型'}</div>
+    const row = document.createElement('div');
+    row.className = 'api-archive-item';
+    row.innerHTML = `
+      <div class="api-archive-info" data-idx="${idx}">
+        <div class="api-archive-name">${arc.name || '未命名'}</div>
+        <div class="api-archive-url">${arc.url || ''}</div>
       </div>
-      <button class="btn-del" data-idx="${idx}">✕</button>
-    `;
-    div.querySelector('.cd-item-info').addEventListener('click', () => {
-      document.getElementById('api-url-input').value = arc.url;
-      document.getElementById('api-key-input').value = arc.key;
-      apiConfig = { url: arc.url, key: arc.key, model: arc.model };
-      loadApiConfigToUI();
-      const status = document.getElementById('api-fetch-status');
-      status.textContent = `已加载存档「${arc.name}」`;
-      status.className   = 'api-fetch-status ok';
+      <button class="api-archive-del" data-del="${idx}">删除</button>`;
+    container.appendChild(row);
+  });
+  // 点击填充
+  container.querySelectorAll('.api-archive-info').forEach(info => {
+    info.addEventListener('click', function () {
+      const arc = apiArchives[parseInt(this.dataset.idx)];
+      document.getElementById('api-config-name').value = arc.name || '';
+      document.getElementById('api-url').value = arc.url || '';
+      document.getElementById('api-key').value = arc.key || '';
+      setApiModelVisible(false);
+      setApiStatus('');
     });
-    div.querySelector('.btn-del').addEventListener('click', () => {
-      apiArchives.splice(idx, 1);
-      saveApiArchives();
+  });
+  // 删除
+  container.querySelectorAll('.api-archive-del').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      apiArchives.splice(parseInt(this.dataset.del), 1);
+      sSave('apiArchives', apiArchives);
       renderApiArchiveList();
     });
-    el.appendChild(div);
   });
 }
-
-function saveArchive() {
-  const name  = document.getElementById('api-archive-name').value.trim();
-  const url   = document.getElementById('api-url-input').value.trim().replace(/\/$/, '');
-  const key   = document.getElementById('api-key-input').value.trim();
-  const model = document.getElementById('api-model-select').value;
-  if (!name || !url) { alert('请填写存档名称和 API 地址'); return; }
-  apiArchives.push({ name, url, key, model });
-  saveApiArchives();
-  renderApiArchiveList();
-  document.getElementById('api-archive-name').value = '';
+function setApiStatus(msg, type) {
+  const el = document.getElementById('api-fetch-status');
+  el.textContent = msg;
+  el.className = 'api-status-text' + (type ? ' ' + type : '');
+}
+function setApiModelVisible(show) {
+  document.getElementById('api-model-label').style.display = show ? '' : 'none';
+  document.getElementById('api-model-select').style.display = show ? '' : 'none';
+  document.getElementById('api-model-confirm-btn').style.display = show ? '' : 'none';
 }
 
-function initApiSettings() {
-  loadApiConfigToUI();
-  renderApiArchiveList();
-  document.getElementById('btn-fetch-models').addEventListener('click', fetchModels);
-  document.getElementById('btn-save-api').addEventListener('click', saveCurrentApiConfig);
-  document.getElementById('btn-save-archive').addEventListener('click', saveArchive);
-}
-
-/* =====================================================
-   ② 美化 / 主题
-===================================================== */
-
-/* --- 壁纸 --- */
-function applyWallpaper(src) {
-  let el = document.getElementById('phone-wallpaper');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'phone-wallpaper';
-    document.getElementById('phone').prepend(el);
+// 拉取模型
+document.getElementById('api-fetch-models-btn').addEventListener('click', async function () {
+  const url = document.getElementById('api-url').value.trim();
+  const key = document.getElementById('api-key').value.trim();
+  if (!url) {
+    setApiStatus('请先填写 API 地址', 'error');
+    return;
   }
-  el.style.backgroundImage = `url("${src}")`;
-  localStorage.setItem('halo_wallpaper', src);
+
+  setApiStatus('正在请求模型列表…');
+  this.disabled = true;
+
+  try {
+    const endpoint = url.replace(/\/$/, '') + '/models';
+    const headers = { 'Content-Type': 'application/json' };
+    if (key) headers['Authorization'] = 'Bearer ' + key;
+
+    const res = await fetch(endpoint, { headers });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    let models = [];
+    if (Array.isArray(json.data)) {
+      models = json.data.map(m => m.id || m.name).filter(Boolean);
+    } else if (Array.isArray(json.models)) {
+      models = json.models.map(m => m.name || m.id).filter(Boolean);
+    } else if (Array.isArray(json)) {
+      models = json.map(m => m.id || m.name).filter(Boolean);
+    }
+
+    if (!models.length) throw new Error('未获取到模型列表');
+
+    const sel = document.getElementById('api-model-select');
+    sel.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+    setApiModelVisible(true);
+    setApiStatus('获取到 ' + models.length + ' 个模型', 'success');
+  } catch (err) {
+    setApiStatus('请求失败：' + err.message, 'error');
+    setApiModelVisible(false);
+  } finally {
+    this.disabled = false;
+  }
+});
+
+// 确认选择模型
+document.getElementById('api-model-confirm-btn').addEventListener('click', function () {
+  currentApiModel = document.getElementById('api-model-select').value;
+  sSave('apiCurrentModel', currentApiModel);
+  setApiStatus('已选择模型：' + currentApiModel, 'success');
+});
+
+// 保存配置
+document.getElementById('api-save-btn').addEventListener('click', function () {
+  const name = document.getElementById('api-config-name').value.trim() ||
+    '配置' + (apiArchives.length + 1);
+  const url = document.getElementById('api-url').value.trim();
+  const key = document.getElementById('api-key').value.trim();
+  if (!url) {
+    setApiStatus('API 地址不能为空', 'error');
+    return;
+  }
+
+  const existing = apiArchives.findIndex(a => a.name === name);
+  if (existing >= 0) {
+    apiArchives[existing] = { name, url, key };
+  } else {
+    apiArchives.push({ name, url, key });
+  }
+  sSave('apiArchives', apiArchives);
+  sSave('apiActiveConfig', { name, url, key });
+  renderApiArchiveList();
+  setApiStatus('配置已保存', 'success');
+});
+
+// 恢复上次激活配置
+(function restoreApiConfig() {
+  const active = sLoad('apiActiveConfig', null);
+  if (!active) return;
+  document.getElementById('api-config-name').value = active.name || '';
+  document.getElementById('api-url').value = active.url || '';
+  document.getElementById('api-key').value = active.key || '';
+})();
+
+/* ============================================================
+   ② 美化 / 主题
+   ============================================================ */
+
+/* ---- 壁纸 ---- */
+let wallpaperSrc = sLoad('wallpaper', '');
+
+function applyWallpaper(src) {
+  wallpaperSrc = src;
+  sSave('wallpaper', src);
+  document.body.style.backgroundImage = src ? `url(${src})` : '';
+  document.body.style.backgroundSize = src ? 'cover' : '';
+  document.body.style.backgroundPosition = src ? 'center' : '';
+
+  const preview = document.getElementById('wallpaper-preview');
+  if (preview) {
+    preview.style.backgroundImage = src ? `url(${src})` : '';
+    preview.style.border = src ? 'none' : '';
+  }
 }
+applyWallpaper(wallpaperSrc);
 
-function clearWallpaper() {
-  const el = document.getElementById('phone-wallpaper');
-  if (el) el.style.backgroundImage = 'none';
-  localStorage.removeItem('halo_wallpaper');
-}
+document.getElementById('wallpaper-url-btn').addEventListener('click', function () {
+  document.getElementById('wallpaper-url-input').value = wallpaperSrc || '';
+  document.getElementById('wallpaper-url-modal').classList.add('show');
+});
+document.getElementById('wallpaper-url-confirm').addEventListener('click', function () {
+  const url = document.getElementById('wallpaper-url-input').value.trim();
+  applyWallpaper(url);
+  document.getElementById('wallpaper-url-modal').classList.remove('show');
+});
+document.getElementById('wallpaper-url-cancel').addEventListener('click', function () {
+  document.getElementById('wallpaper-url-modal').classList.remove('show');
+});
+document.getElementById('wallpaper-local-btn').addEventListener('click', function () {
+  document.getElementById('wallpaper-file-input').click();
+});
+document.getElementById('wallpaper-file-input').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => applyWallpaper(e.target.result);
+  reader.readAsDataURL(file);
+});
+document.getElementById('wallpaper-clear-btn').addEventListener('click', function () {
+  applyWallpaper('');
+});
 
-function initWallpaper() {
-  const saved = localStorage.getItem('halo_wallpaper');
-  if (saved) applyWallpaper(saved);
-
-  document.getElementById('wallpaper-local-file').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => applyWallpaper(ev.target.result);
-    reader.readAsDataURL(file);
-  });
-
-  document.getElementById('btn-show-wallpaper-url').addEventListener('click', () => {
-    const inp = document.getElementById('wallpaper-url-input');
-    const btn = document.getElementById('btn-wallpaper-apply');
-    const show = inp.style.display === 'none';
-    inp.style.display = show ? 'block' : 'none';
-    btn.style.display = show ? 'block' : 'none';
-  });
-
-  document.getElementById('btn-wallpaper-apply').addEventListener('click', () => {
-    const url = document.getElementById('wallpaper-url-input').value.trim();
-    if (url) applyWallpaper(url);
-  });
-
-  document.getElementById('btn-wallpaper-clear').addEventListener('click', clearWallpaper);
-}
-
-/* --- App 图标替换 --- */
-const APP_ICON_REGISTRY = [
-  { imgId: 'appicon-chat',     labelId: 'applabel-chat',     defaultLabel: '聊天' },
-  { imgId: 'appicon-settings', labelId: 'applabel-settings', defaultLabel: '设置' },
+/* ---- App 图标替换 ---- */
+const iconRegistry = [
+  { key: 'dock-chat', label: 'Dock · 聊天', selector: '#dock-chat .app-icon' },
+  { key: 'dock-home', label: 'Dock · 主页', selector: '#dock-home .app-icon' },
+  { key: 'dock-settings', label: 'Dock · 设置', selector: '#dock-settings .app-icon' },
+  { key: 'app2-chat', label: '聊天 App', selector: '[data-app="chat"] .app-icon' },
+  { key: 'app2-settings', label: '设置 App', selector: '[data-app="settings"] .app-icon' },
+  { key: 'app4-0', label: '音乐', selector: '[data-app="0"] .app-icon' },
+  { key: 'app4-1', label: '相机', selector: '[data-app="1"] .app-icon' },
+  { key: 'app4-2', label: '日历', selector: '[data-app="2"] .app-icon' },
+  { key: 'app4-3', label: '相册', selector: '[data-app="3"] .app-icon' },
 ];
+let customIcons = sLoad('customIcons', {});
+let iconEditKey = '';
+let iconTab = 'url';
 
-let iconData = JSON.parse(localStorage.getItem('halo_icons') || '{}');
-
-function saveIconData() { localStorage.setItem('halo_icons', JSON.stringify(iconData)); }
-
-function applyAllIcons() {
-  APP_ICON_REGISTRY.forEach(reg => {
-    const saved = iconData[reg.imgId];
-    if (!saved) return;
-    const img = document.getElementById(reg.imgId);
-    if (img && saved.src) img.src = saved.src;
-    const lbl = document.getElementById(reg.labelId);
-    if (lbl && saved.label) lbl.textContent = saved.label;
+function restoreAllIcons() {
+  iconRegistry.forEach(reg => {
+    if (customIcons[reg.key]) {
+      document.querySelectorAll(reg.selector).forEach(el => {
+        el.src = customIcons[reg.key];
+      });
+    }
   });
 }
+restoreAllIcons();
 
 function renderIconReplaceList() {
-  const list = document.getElementById('icon-replace-list');
-  list.innerHTML = '';
-
-  APP_ICON_REGISTRY.forEach(reg => {
-    const saved  = iconData[reg.imgId] || {};
-    const imgEl  = document.getElementById(reg.imgId);
-    const curSrc = (imgEl && imgEl.src) ? imgEl.src : '';
-
-    const item = document.createElement('div');
-    item.className = 'icon-replace-item';
-
-    /* 预览图 */
-    const preview = document.createElement('img');
-    preview.className = 'icon-replace-preview';
-    preview.src = saved.src || curSrc;
-    preview.alt = reg.defaultLabel;
-
-    /* 信息列 */
-    const info = document.createElement('div');
-    info.className = 'icon-replace-info';
-
-    const labelInp = document.createElement('input');
-    labelInp.type        = 'text';
-    labelInp.placeholder = '图标名称';
-    labelInp.value       = saved.label || reg.defaultLabel;
-
-    const urlInp = document.createElement('input');
-    urlInp.type        = 'url';
-    urlInp.placeholder = '图标图片 URL';
-    urlInp.value       = saved.src || '';
-
-    info.appendChild(labelInp);
-    info.appendChild(urlInp);
-
-    /* 按钮列 */
-    const btns = document.createElement('div');
-    btns.className = 'icon-replace-btns';
-
-    const fileId    = `iconfile-${reg.imgId}`;
-    const fileLbl   = document.createElement('label');
-    fileLbl.className   = 'btn-mini';
-    fileLbl.htmlFor     = fileId;
-    fileLbl.textContent = '上传';
-
-    const fileInp = document.createElement('input');
-    fileInp.type    = 'file';
-    fileInp.accept  = 'image/*';
-    fileInp.id      = fileId;
-    fileInp.style.display = 'none';
-    fileInp.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        preview.src  = ev.target.result;
-        urlInp.value = '';
-        _saveIconEntry(reg.imgId, reg.labelId, ev.target.result, labelInp.value);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    const applyBtn = document.createElement('div');
-    applyBtn.className   = 'btn-mini';
-    applyBtn.textContent = '应用';
-    applyBtn.addEventListener('click', () => {
-      const src = urlInp.value.trim() || preview.src;
-      if (urlInp.value.trim()) preview.src = urlInp.value.trim();
-      _saveIconEntry(reg.imgId, reg.labelId, src, labelInp.value);
-    });
-
-    btns.appendChild(fileLbl);
-    btns.appendChild(fileInp);
-    btns.appendChild(applyBtn);
-
-    item.appendChild(preview);
-    item.appendChild(info);
-    item.appendChild(btns);
-    list.appendChild(item);
+  const container = document.getElementById('icon-replace-list');
+  container.innerHTML = '';
+  iconRegistry.forEach(reg => {
+    const row = document.createElement('div');
+    row.className = 'icon-replace-row';
+    const currentSrc =
+      customIcons[reg.key] ||
+      (document.querySelector(reg.selector) ? document.querySelector(reg.selector).src : '');
+    row.innerHTML = `
+      <img class="icon-replace-preview" src="${currentSrc}" alt="">
+      <div class="icon-replace-name">${reg.label}</div>
+      <div class="icon-replace-hint">点击替换 ›</div>`;
+    row.addEventListener('click', () => openIconReplaceModal(reg.key, reg.label));
+    container.appendChild(row);
   });
 }
-
-function _saveIconEntry(imgId, labelId, src, label) {
-  iconData[imgId] = { src, label };
-  saveIconData();
-  const img = document.getElementById(imgId);
-  if (img && src) img.src = src;
-  const lbl = document.getElementById(labelId);
-  if (lbl && label) lbl.textContent = label;
+function openIconReplaceModal(key, label) {
+  iconEditKey = key;
+  iconTab = 'url';
+  document.getElementById('icon-replace-modal-title').textContent = '替换：' + label;
+  document.getElementById('icon-url-input').value = '';
+  document.getElementById('icon-file-input').value = '';
+  setIconTab('url');
+  document.getElementById('icon-replace-modal').classList.add('show');
 }
-
-/* --- 配色 --- */
-const DEFAULT_COLORS = {
-  '--bg':        '#1a1f2e',
-  '--fog':       '#f5f0e8',
-  '--accent':    '#7a9abf',
-  '--accent2':   '#a8c0d6',
-  '--text-main': '#e8e4da',
-  '--text-sub':  '#b0b8c8',
-};
-
-function applyColors(map) {
-  const root = document.documentElement;
-  Object.entries(map).forEach(([k, v]) => root.style.setProperty(k, v));
+document.querySelectorAll('[data-icon-tab]').forEach(btn => {
+  btn.addEventListener('click', function () {
+    setIconTab(this.dataset.iconTab);
+  });
+});
+function setIconTab(tab) {
+  iconTab = tab;
+  document.querySelectorAll('[data-icon-tab]').forEach(b => {
+    b.classList.toggle('active', b.dataset.iconTab === tab);
+  });
+  document.getElementById('icon-url-panel').style.display = tab === 'url' ? '' : 'none';
+  document.getElementById('icon-local-panel').style.display = tab === 'local' ? '' : 'none';
 }
-
-function initColors() {
-  const saved = JSON.parse(localStorage.getItem('halo_colors') || '{}');
-  if (Object.keys(saved).length) {
-    applyColors(saved);
-    document.querySelectorAll('.color-picker').forEach(p => {
-      if (saved[p.dataset.var]) p.value = saved[p.dataset.var];
+function applyIconSrc(key, src) {
+  customIcons[key] = src;
+  sSave('customIcons', customIcons);
+  const reg = iconRegistry.find(r => r.key === key);
+  if (reg) {
+    document.querySelectorAll(reg.selector).forEach(el => {
+      el.src = src;
     });
   }
+  renderIconReplaceList();
 }
-
-function applyColorSettings() {
-  const map = {};
-  document.querySelectorAll('.color-picker').forEach(p => {
-    map[p.dataset.var] = p.value;
-  });
-  applyColors(map);
-  localStorage.setItem('halo_colors', JSON.stringify(map));
-}
-
-function resetColors() {
-  applyColors(DEFAULT_COLORS);
-  localStorage.removeItem('halo_colors');
-  document.querySelectorAll('.color-picker').forEach(p => {
-    p.value = DEFAULT_COLORS[p.dataset.var] || '#ffffff';
-  });
-}
-
-function initThemeSettings() {
-  initWallpaper();
-  applyAllIcons();
-  initColors();
-
-  document.getElementById('btn-color-apply').addEventListener('click', applyColorSettings);
-  document.getElementById('btn-color-reset').addEventListener('click', resetColors);
-
-  /* 切换到美化标签时渲染图标列表 */
-  document.querySelectorAll('.stab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      if (tab.dataset.tab === 'tab-theme') renderIconReplaceList();
-    });
-  });
-}
-
-/* =====================================================
-   ③ 数据管理
-===================================================== */
-function exportData() {
-  const data = {
-    halo_cd:           JSON.parse(localStorage.getItem('halo_cd')           || '[]'),
-    halo_gallery:      JSON.parse(localStorage.getItem('halo_gallery')      || '[]'),
-    halo_chat:         JSON.parse(localStorage.getItem('halo_chat')         || '{}'),
-    halo_api_config:   JSON.parse(localStorage.getItem('halo_api_config')   || '{}'),
-    halo_api_archives: JSON.parse(localStorage.getItem('halo_api_archives') || '[]'),
-    halo_wallpaper:    localStorage.getItem('halo_wallpaper') || '',
-    halo_icons:        JSON.parse(localStorage.getItem('halo_icons')        || '{}'),
-    halo_colors:       JSON.parse(localStorage.getItem('halo_colors')       || '{}'),
-  };
-  const json = JSON.stringify(data, null, 2);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(json)
-      .then(() => alert('数据已复制到剪贴板'))
-      .catch(() => prompt('请手动复制：', json));
+document.getElementById('icon-replace-confirm').addEventListener('click', function () {
+  if (iconTab === 'url') {
+    const url = document.getElementById('icon-url-input').value.trim();
+    if (!url) return;
+    applyIconSrc(iconEditKey, url);
+    document.getElementById('icon-replace-modal').classList.remove('show');
   } else {
-    prompt('请手动复制：', json);
+    const file = document.getElementById('icon-file-input').files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      applyIconSrc(iconEditKey, e.target.result);
+      document.getElementById('icon-replace-modal').classList.remove('show');
+    };
+    reader.readAsDataURL(file);
   }
-}
+});
+document.getElementById('icon-replace-cancel').addEventListener('click', function () {
+  document.getElementById('icon-replace-modal').classList.remove('show');
+});
 
-function showImportArea() {
-  const area = document.getElementById('settings-import-input');
-  const btn  = document.getElementById('btn-import-confirm');
-  const show = area.style.display === 'none';
-  area.style.display = show ? 'block' : 'none';
-  btn.style.display  = show ? 'block' : 'none';
-}
+/* ---- 整体配色 ---- */
+const colorDefs = [
+  { key: '--primary', label: '主色调', default: '#99C8ED' },
+  { key: '--light-blue', label: '亮蓝色', default: '#B3D8F4' },
+  { key: '--mid-blue', label: '中蓝色', default: '#7a9abf' },
+  { key: '--bg', label: '背景色', default: '#F5F5F0' },
+  { key: '--bg2', label: '辅助背景', default: '#F8F9FA' },
+  { key: '--dark-bg', label: '深色背景', default: '#1a1f2e' },
+  { key: '--text-dark', label: '主文字色', default: '#2c3448' },
+  { key: '--text-mid', label: '次文字色', default: '#5a6a80' },
+  { key: '--text-light', label: '淡文字色', default: '#9aafc4' },
+];
+let customColors = sLoad('customColors', {});
 
-function confirmImport() {
-  try {
-    const raw  = document.getElementById('settings-import-input').value.trim();
-    const data = JSON.parse(raw);
-    const keys = [
-      'halo_cd','halo_gallery','halo_chat',
-      'halo_api_config','halo_api_archives',
-      'halo_icons','halo_colors',
-    ];
-    keys.forEach(k => {
-      if (data[k] !== undefined) localStorage.setItem(k, JSON.stringify(data[k]));
+function applyColors(colorMap) {
+  Object.entries(colorMap).forEach(([k, v]) => {
+    document.documentElement.style.setProperty(k, v);
+  });
+}
+applyColors(customColors);
+
+function renderColorFields() {
+  const container = document.getElementById('color-fields');
+  container.innerHTML = '';
+  colorDefs.forEach(def => {
+    const currentVal = customColors[def.key] || def.default;
+    const row = document.createElement('div');
+    row.className = 'color-field-row';
+    row.innerHTML = `
+      <div class="color-field-label">${def.label}</div>
+      <input type="color" class="color-field-input" data-ckey="${def.key}" value="${currentVal}">
+      <input type="text"  class="color-field-hex"   data-hkey="${def.key}" value="${currentVal}" maxlength="7">`;
+    container.appendChild(row);
+  });
+
+  // 同步 color → hex
+  container.querySelectorAll('.color-field-input').forEach(picker => {
+    picker.addEventListener('input', function () {
+      const hexEl = container.querySelector(`.color-field-hex[data-hkey="${this.dataset.ckey}"]`);
+      if (hexEl) hexEl.value = this.value;
     });
-    if (data.halo_wallpaper) localStorage.setItem('halo_wallpaper', data.halo_wallpaper);
-    alert('导入成功，即将刷新页面');
+  });
+  // 同步 hex → color
+  container.querySelectorAll('.color-field-hex').forEach(hexEl => {
+    hexEl.addEventListener('input', function () {
+      const val = this.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        const picker = container.querySelector(`.color-field-input[data-ckey="${this.dataset.hkey}"]`);
+        if (picker) picker.value = val;
+      }
+    });
+  });
+}
+document.getElementById('color-apply-btn').addEventListener('click', function () {
+  const container = document.getElementById('color-fields');
+  colorDefs.forEach(def => {
+    const hexEl = container.querySelector(`.color-field-hex[data-hkey="${def.key}"]`);
+    if (hexEl) {
+      const val = hexEl.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(val)) customColors[def.key] = val;
+    }
+  });
+  sSave('customColors', customColors);
+  applyColors(customColors);
+});
+document.getElementById('color-reset-btn').addEventListener('click', function () {
+  customColors = {};
+  sSave('customColors', {});
+  colorDefs.forEach(def => {
+    document.documentElement.style.setProperty(def.key, def.default);
+  });
+  renderColorFields();
+});
+
+/* ============================================================
+   ③ 数据管理
+   ============================================================ */
+const ALL_DATA_KEYS = [
+  'cdItems', 'carouselUrls', 'userAvatar', 'userSig',
+  'msgData', 'textBars', 'apiArchives', 'apiActiveConfig',
+  'apiCurrentModel', 'customIcons', 'customColors', 'wallpaper'
+];
+const THEME_DATA_KEYS = ['customIcons', 'customColors', 'wallpaper'];
+
+function collectData(keys) {
+  const result = {};
+  keys.forEach(k => {
+    const v = localStorage.getItem('halo9_' + k);
+    if (v !== null) result[k] = JSON.parse(v);
+  });
+  return result;
+}
+function downloadJson(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importJson(file, keys, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      keys.forEach(k => {
+        if (k in data) {
+          localStorage.setItem('halo9_' + k, JSON.stringify(data[k]));
+        }
+      });
+      callback && callback();
+    } catch (err) {
+      alert('导入失败：JSON 格式错误');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* 导出全部 */
+document.getElementById('export-all-btn')
+  .addEventListener('click', () => downloadJson(collectData(ALL_DATA_KEYS), 'halo9_all_' + Date.now() + '.json'));
+
+/* 导入全部 */
+document.getElementById('import-all-btn')
+  .addEventListener('click', () => document.getElementById('import-all-file').click());
+document.getElementById('import-all-file')
+  .addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    importJson(file, ALL_DATA_KEYS, () => {
+      alert('全部数据导入成功，即将刷新页面');
+      location.reload();
+    });
+    this.value = '';
+  });
+
+/* 导出美化 */
+document.getElementById('export-theme-btn')
+  .addEventListener('click', () => downloadJson(collectData(THEME_DATA_KEYS), 'halo9_theme_' + Date.now() + '.json'));
+
+/* 导入美化 */
+document.getElementById('import-theme-btn')
+  .addEventListener('click', () => document.getElementById('import-theme-file').click());
+document.getElementById('import-theme-file')
+  .addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    importJson(file, THEME_DATA_KEYS, () => {
+      const wp = sLoad('wallpaper', '');
+      applyWallpaper(wp);
+      customColors = sLoad('customColors', {});
+      applyColors(customColors);
+      customIcons = sLoad('customIcons', {});
+      restoreAllIcons();
+      alert('美化数据导入成功');
+    });
+    this.value = '';
+  });
+
+/* 清除全部数据 */
+document.getElementById('clear-all-data-btn')
+  .addEventListener('click', function () {
+    if (!confirm('确定要清除全部本地数据吗？此操作不可恢复！')) return;
+    ALL_DATA_KEYS.forEach(k => localStorage.removeItem('halo9_' + k));
+    alert('已清除全部数据，即将刷新页面');
     location.reload();
-  } catch(e) {
-    alert('JSON 格式有误，请检查后重试');
-  }
-}
+  });
 
-function clearAllData() {
-  if (!confirm('确认清空所有数据？此操作不可撤销。')) return;
-  [
-    'halo_cd','halo_gallery','halo_chat',
-    'halo_api_config','halo_api_archives',
-    'halo_wallpaper','halo_icons','halo_colors',
-  ].forEach(k => localStorage.removeItem(k));
-  alert('已清空，即将刷新页面');
-  location.reload();
-}
-
-function initDataSettings() {
-  document.getElementById('btn-export-data').addEventListener('click', exportData);
-  document.getElementById('btn-import-data').addEventListener('click', showImportArea);
-  document.getElementById('btn-import-confirm').addEventListener('click', confirmImport);
-  document.getElementById('btn-clear-all').addEventListener('click', clearAllData);
-}
-
-/* =====================================================
-   设置页标签切换
-===================================================== */
-function initSettingsTabs() {
-  document.querySelectorAll('.stab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.tab).classList.add('active');
+/* ============================================================
+   弹窗遮罩关闭（settings 内新增弹窗）
+   ============================================================ */
+['wallpaper-url-modal', 'icon-replace-modal'].forEach(id => {
+  const mask = document.getElementById(id);
+  if (mask) {
+    mask.addEventListener('click', function (e) {
+      if (e.target === this) this.classList.remove('show');
     });
-  });
-}
-
-/* =====================================================
-   统一初始化入口（供 app.js 调用）
-===================================================== */
-function initSettings() {
-  initChat();
-  initApiSettings();
-  initThemeSettings();
-  initDataSettings();
-  initSettingsTabs();
-
-  document.getElementById('btn-open-settings').addEventListener('click', () => {
-    openModal('modal-settings');
-  });
-  document.getElementById('btn-settings-close').addEventListener('click', () => {
-    closeModal('modal-settings');
-  });
-}
+  }
+});
